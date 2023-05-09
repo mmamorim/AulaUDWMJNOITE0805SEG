@@ -1,44 +1,74 @@
-import React, { Component } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Icon } from '@iconify/react';
+import axios from 'axios'
 
-export default class Busca extends Component {
+const Busca = () => {
 
-    state = {
-        termoDeBusca: ''
+    const [termoBusca, setTermoBusca] = useState('React')
+    const [resultados, setResultados] = useState([])
+
+    const fazBusca = async () => {
+        console.log('fazBusca')
+
+        let obj = await axios.get('https://en.wikipedia.org/w/api.php', {
+            params: {
+                action: 'query',
+                list: 'search',
+                format: 'json',
+                // instruindo o navegador a permitir
+                // conteúdo de qualque origem
+                origin: '*',
+                srsearch: termoBusca
+            }
+        })
+        console.log('terminei', obj.data.query.search);
+        setResultados(obj.data.query.search)
     }
 
-    onTermoAlterado = (event) => {
-        console.log(event.target.value)
-        this.setState({ termoDeBusca: event.target.value })
-    }
+    useEffect(() => {
+        console.log('montei o componente')
+        const timeoutID = setTimeout(() => {
+            //execução condicional de novo
+            if (termoBusca)
+                fazBusca()
+        }, 1000)
+        return () => {
+            clearTimeout(timeoutID)
+        }
+    }, [termoBusca])
 
-    onFormSubmit = (event) => {
-        event.preventDefault()
-        console.log('submit do form');
-        this.props.onBuscaRealizada(this.state.termoDeBusca)
-    }
-
-    render() {
-        return (
+    return (
+        <div>
             <div>
-                <form onSubmit={this.onFormSubmit}>
-                    <div className="flex items-center">
-                        <div>
-                            <Icon icon="mdi:search" />
-                        </div>
-                        <input onChange={this.onTermoAlterado} placeholder={this.props.dica} className="border rounded border-black" type="text" />
-                    </div>
-                    <div className="flex justify-center mt-1">
-                        <button className="w-40 border px-1 rounded bg-blue-500 cursor-pointer text-white">
-                            OK
-                        </button>
-                    </div>
-                </form>
+                {termoBusca}
             </div>
-        )
-    }
+            <div className="flex items-center">
+                <div>
+                    <Icon icon="mdi:search" />
+                </div>
+                <input onChange={(e) => setTermoBusca(e.target.value)} className="border rounded border-black" type="text" />
+            </div>
+            <div>
+                {
+                    resultados.map((resultado) => (
+                        <div
+                            key={resultado.pageid}
+                            // margem e borda
+                            className="my-2 border">
+                            <div
+                                // borda, padding e ajuste textual
+                                className="border p-2 text-center font-bold">
+                                {resultado.title}
+                            </div>
+                            {/* padding */}
+                            <div className="p-2" dangerouslySetInnerHTML={{ __html: resultado.snippet }}>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    )
 }
 
-Busca.defaultProps = {
-    dica: 'Digite algo que deseja ver...'
-}
+export default Busca
